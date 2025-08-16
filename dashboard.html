@@ -1,53 +1,22 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Dashboard • Spin & Scratch</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Spin & Scratch</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="nav">
-    <div class="brand">Spin & Scratch</div>
-    <div>
-      <button id="balanceBtn" class="btn">Balance: ₹0</button>
-      <button id="logoutBtn" class="btn">Logout</button>
+  <div class="dashboard">
+    <h2>Welcome to Spin & Scratch 🎉</h2>
+    <div class="sections">
+      <button onclick="window.location.href='spin.html'">🎡 Spin & Win</button>
+      <button onclick="window.location.href='scratch.html'">🎫 Scratch & Win</button>
+    </div>
+    <div class="balance">
+      <p>Your Balance: <span id="balance">0</span> ₹</p>
+      <button onclick="window.location.href='withdraw.html'">Withdraw</button>
     </div>
   </div>
-  <main style="padding:24px;">
-    <h2>Play & Earn</h2>
-    <div class="card-row">
-      <div class="card">
-        <h3>Spin & Win</h3>
-        <p>Click to open the spin wheel.</p>
-        <a class="btn" href="spin.html">Go to Spin</a>
-      </div>
-      <div class="card">
-        <h3>Scratch & Win</h3>
-        <p>Try your luck with a scratch card.</p>
-        <a class="btn" href="scratch.html">Go to Scratch</a>
-      </div>
-    </div>
-    <div style="margin-top:28px;">
-      <a class="btn" href="withdraw.html">Withdraw / Gift Cards</a>
-      <a class="btn" href="/admin.html">Admin Panel</a>
-    </div>
-  </main>
-  <script>
-    async function getMe() {
-      const token = localStorage.getItem('token');
-      if (!token) return location.href = '/';
-      const res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token }});
-      if (!res.ok) return location.href = '/';
-      const data = await res.json();
-      if (!data.ok) return location.href = '/';
-      document.getElementById('balanceBtn').innerText = 'Balance: ₹' + (data.user.balance || 0);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-    getMe();
-    document.getElementById('balanceBtn').addEventListener('click', () => { location.href = '/withdraw.html'; });
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token'); localStorage.removeItem('user'); location.href = '/';
-    });
-  </script>
 </body>
 </html>
