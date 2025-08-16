@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scratch & Win</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">Spin & Scratch</div>
+    <div><button id="backBtn" class="btn">Back</button></div>
+  </div>
+  <main style="padding:24px;">
+    <h2>Scratch & Win</h2>
+    <div id="scratchWrapper" style="position:relative;display:inline-block">
+      <canvas id="scratchCanvas" width="300" height="300" style="border-radius:12px;"></canvas>
+      <div id="rewardPanel" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;visibility:hidden;background:rgba(0,0,0,0.6);color:gold;font-size:22px;border-radius:12px;">
+        <div id="rewardText"></div>
+        <button id="playAgainBtn" class="btn" style="margin-top:12px">Play Again</button>
+      </div>
+    </div>
+    <p id="limitText" style="margin-top:12px"></p>
+  </main>
+<script>
+  const token = localStorage.getItem('token'); if (!token) location.href = '/';
+  document.getElementById('backBtn').onclick = () => location.href = '/dashboard.html';
+  const canvas = document.getElementById('scratchCanvas'); const ctx = canvas.getContext('2d');
+  const rewardPanel=document.getElementById('rewardPanel'); const rewardText=document.getElementById('rewardText'); const playAgainBtn=document.getElementById('playAgainBtn'); const limitText=document.getElementById('limitText');
+  let today = new Date().toDateString(); let sd = JSON.parse(localStorage.getItem('scratchGameData')||'null'); if (!sd || sd.date !== today) { sd = { date: today, count: 0 }; localStorage.setItem('scratchGameData', JSON.stringify(sd)); }
+  limitText.innerText = `Scratch cards left today: ${10 - sd.count}/10`;
+  let isDrawing=false, revealed=false;
+  function initCanvas(){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.font='22px Arial'; ctx.fillStyle='black'; ctx.textAlign='center'; ctx.fillText('Scratch Here', canvas.width/2, canvas.height/2);
+    ctx.fillStyle='#b4b7c2'; ctx.globalCompositeOperation='source-over'; ctx.fillRect(0,0,canvas.width,canvas.height); } initCanvas();
+  function scratch(e){ if (revealed) return; if (sd.count>=10) return alert('Daily scratch limit reached'); ctx.globalCompositeOperation='destination-out'; const rect=canvas.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left; const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top; ctx.beginPath(); ctx.arc(x,y,20,0,Math.PI*2); ctx.fill(); }
+  function percentCleared(){ const img=ctx.getImageData(0,0,canvas.width,canvas.height).data; let transparent=0; for(let i=3;i<img.length;i+=4) if(img[i]===0) transparent++; return transparent/(canvas.width*canvas.height)*100; }
+  function checkReveal(){ if (revealed) return; if (percentCleared()>90){ revealed=true; sd.count++; localStorage.setItem('scratchGameData', JSON.stringify(sd)); limitText.innerText = `Scratch cards left today: ${10 - sd.count}/10`;
+      fetch('/api/play/scratch', { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+token }}).then(r=>r.json()).then(d=>{
+        if (!d.ok) return alert('Play error'); rewardText.innerText = `You won ₹${d.prize}`; rewardPanel.style.visibility='visible';
+        localStorage.setItem('user', JSON.stringify({ ...JSON.parse(localStorage.getItem('user')||'{}'), balance: d.balance }));
+      }).catch(()=>alert('Play failed')); } }
+  canvas.addEventListener('mousedown', ()=> isDrawing=true);
+  canvas.addEventListener('mouseup', ()=> { isDrawing=false; checkReveal(); });
+  canvas.addEventListener('mousemove', (e)=> { if(isDrawing) scratch(e); });
+  canvas.addEventListener('touchstart', (e)=> { isDrawing=true; scratch(e); }, {passive:false});
+  canvas.addEventListener('touchmove', (e)=> { if(isDrawing) { scratch(e); e.preventDefault(); } }, {passive:false});
+  canvas.addEventListener('touchend', ()=> { isDrawing=false; checkReveal(); });
+  playAgainBtn.onclick = () => { if (sd.count>=10) return alert('Daily limit reached'); revealed=false; rewardPanel.style.visibility='hidden'; initCanvas(); };
+</script>
+</body>
+</html>

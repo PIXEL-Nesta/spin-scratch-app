@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Spin & Win</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">Spin & Scratch</div>
+    <div><button id="backBtn" class="btn">Back</button></div>
+  </div>
+  <main style="padding:24px;">
+    <h2>Spin & Win</h2>
+    <canvas id="wheelCanvas" width="380" height="380" style="display:block;margin:10px auto;border-radius:50%;"></canvas>
+    <div style="text-align:center">
+      <button id="spinBtn" class="spin-btn">SPIN NOW</button>
+      <p id="spinMsg" style="margin-top:12px;color:#fff;"></p>
+    </div>
+  </main>
+  <script>
+    const token = localStorage.getItem('token'); if (!token) location.href = '/';
+    document.getElementById('backBtn').onclick = () => location.href = '/dashboard.html';
+    const canvas = document.getElementById('wheelCanvas'); const ctx = canvas.getContext('2d');
+    const segments = [0,5,10,20,50,100,0,25];
+    const colors = ['#ffd166','#ef476f','#06d6a0','#118ab2','#f78c6b','#a29bfe','#f1fa8c','#80ed99'];
+    const size = segments.length; const arc = (Math.PI*2)/size; let angle = 0;
+    function drawWheel(){ const r=canvas.width/2; ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.save(); ctx.translate(r,r);
+      for(let i=0;i<size;i++){ ctx.beginPath(); ctx.fillStyle=colors[i%colors.length]; ctx.moveTo(0,0);
+        ctx.arc(0,0,r,i*arc+angle,(i+1)*arc+angle); ctx.lineTo(0,0); ctx.fill();
+        ctx.save(); ctx.rotate(i*arc + arc/2 + angle); ctx.textAlign='right'; ctx.fillStyle='#0b1020'; ctx.font='bold 18px Poppins'; ctx.fillText('₹'+segments[i], r-16, 6); ctx.restore();
+      }
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(r-8,-r-12); ctx.lineTo(r+10,-r+6); ctx.lineTo(r-28,-r+6); ctx.closePath(); ctx.fill(); ctx.restore();
+    } drawWheel();
+    document.getElementById('spinBtn').addEventListener('click', async () => {
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('spinMsg').innerText = 'Spinning...';
+      const res = await fetch('/api/play/spin', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token }});
+      const data = await res.json();
+      if (!data.ok) { alert('Play failed'); document.getElementById('spinBtn').disabled=false; return; }
+      const prize = data.prize; const targetIdx = segments.indexOf(prize);
+      const spins = 5 + Math.floor(Math.random()*3); const targetAngle = Math.PI*2*spins + (Math.PI*3/2) - targetIdx*arc;
+      const duration = 3500; const start = performance.now(); const initial = angle;
+      function animate(now){ const t = Math.min(1,(now-start)/duration); angle = initial + (targetAngle-initial) * (1 - Math.pow(1-t,3)); drawWheel();
+        if (t<1) requestAnimationFrame(animate); else { document.getElementById('spinMsg').innerText = `You won ₹${prize}. Balance: ₹${data.balance}`; document.getElementById('spinBtn').disabled=false;
+          localStorage.setItem('user', JSON.stringify({ ...JSON.parse(localStorage.getItem('user')||'{}'), balance: data.balance })); } }
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>

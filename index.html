@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Login • Spin & Scratch</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h1>Login / Signup</h1>
+    <input id="username" placeholder="Username" />
+    <input id="phone" placeholder="Mobile number (e.g. 9876543210)" />
+    <input id="email" placeholder="Email" />
+    <button id="sendOtpBtn" class="btn">Send OTP (mock)</button>
+    <p id="otpInfo" style="color:#bdecb6;"></p>
+    <div id="verifyArea" style="display:none; margin-top:10px;">
+      <input id="otpInput" placeholder="Enter OTP" />
+      <button id="verifyBtn" class="btn">Verify & Login</button>
+    </div>
+  </div>
+  <script>
+    async function postJSON(url, body) {
+      const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      return res.json();
+    }
+    document.getElementById('sendOtpBtn').onclick = async () => {
+      const username = document.getElementById('username').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      if (!username || !phone || !email) return alert('Fill all fields');
+      const r = await postJSON('/api/send-otp', { username, phone, email });
+      if (r.ok) {
+        document.getElementById('otpInfo').innerText = 'Mock OTP: ' + r.otp + ' (shown for testing)';
+        document.getElementById('verifyArea').style.display = 'block';
+      } else { alert('Failed to send OTP'); }
+    };
+    document.getElementById('verifyBtn').onclick = async () => {
+      const phone = document.getElementById('phone').value.trim();
+      const otp = document.getElementById('otpInput').value.trim();
+      const r = await postJSON('/api/verify-otp', { phone, otp });
+      if (r.ok) {
+        localStorage.setItem('token', r.token);
+        localStorage.setItem('user', JSON.stringify(r.user));
+        location.href = '/dashboard.html';
+      } else { alert(r.message || 'OTP verify failed'); }
+    };
+  </script>
+</body>
+</html>

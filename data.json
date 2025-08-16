@@ -1,0 +1,18 @@
+{
+  "users": {
+    "+919728516283": {
+      "id": "451abb04-c2c5-4dd7-8b97-f4778568320e",
+      "username": "sunny",
+      "email": "sunnysolanki17779@gmail.com",
+      "phone": "+919728516283",
+      "balance": 0,
+      "createdAt": "2025-08-15T08:27:58.044Z"
+    }
+  },
+  "otps": {},
+  "sessions": {
+    "ae64bbd9-aaed-43b7-8836-67964246c9f3": "+919728516283"
+  },
+  "withdrawals": [],
+  "events": []
+}

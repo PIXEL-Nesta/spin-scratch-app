@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Withdraw</title><link rel="stylesheet" href="style.css" /></head>
+<body>
+  <div class="nav">
+    <div class="brand">Withdraw</div>
+    <div><button class="btn" id="back">Back</button></div>
+  </div>
+  <main style="padding:20px;">
+    <h2>Your Balance: ₹<span id="bal">0</span></h2>
+    <p>Choose Google Play gift card (manual payout by admin)</p>
+    <div class="card-row">
+      <div class="card"><h4>₹10</h4><button class="btn withdrawBtn" data-amt="10">Request ₹10</button></div>
+      <div class="card"><h4>₹20</h4><button class="btn withdrawBtn" data-amt="20">Request ₹20</button></div>
+      <div class="card"><h4>₹50</h4><button class="btn withdrawBtn" data-amt="50">Request ₹50</button></div>
+      <div class="card"><h4>₹100</h4><button class="btn withdrawBtn" data-amt="100">Request ₹100</button></div>
+    </div>
+    <div style="margin-top:18px;">
+      <h3>Your Requests</h3>
+      <ul id="pendingList"></ul>
+    </div>
+  </main>
+<script>
+  const token = localStorage.getItem('token'); if (!token) location.href = '/';
+  document.getElementById('back').onclick = ()=> location.href = '/dashboard.html';
+  async function loadProfile(){
+    const res = await fetch('/api/me', { headers:{ 'Authorization':'Bearer '+token }});
+    const data = await res.json(); if (!data.ok) return location.href='/';
+    document.getElementById('bal').innerText = data.user.balance || 0;
+  } loadProfile();
+  document.querySelectorAll('.withdrawBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const amt = Number(btn.dataset.amt);
+      const res = await fetch('/api/withdraw', { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+token }, body: JSON.stringify({ amount: amt, method: 'Google Play' })});
+      const j = await res.json(); if (!j.ok) return alert(j.message || 'Withdraw failed');
+      alert('Withdraw request created. Admin will process.');
+      renderMyRequests();
+    });
+  });
+  async function renderMyRequests(){
+    // Show only current user's requests; we'll fetch all then filter client-side.
+    try{
+      const meRes = await fetch('/api/me', { headers:{ 'Authorization':'Bearer '+token }});
+      const me = (await meRes.json()).user;
+      const wRes = await fetch('/api/admin/withdrawals', { headers:{ 'x-admin-token': (localStorage.getItem('adminToken') || 'admintoken123') }});
+      const all = (await wRes.json()).withdrawals || [];
+      const mine = all.filter(x => x.userPhone === me.phone);
+      const ul = document.getElementById('pendingList'); ul.innerHTML = '';
+      mine.forEach(w => {
+        const li = document.createElement('li');
+        li.textContent = `₹${w.amount} — ${w.status} — ${new Date(w.createdAt).toLocaleString()}`;
+        ul.appendChild(li);
+      });
+    }catch(e){ /* ignore */ }
+  }
+  renderMyRequests();
+</script>
+</body>
+</html>
